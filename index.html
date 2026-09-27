@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description"
+    content="TN SevaGuard - Tamil Nadu Bill, Tax, Insurance & Renewal Due Date Tracker. Never miss TANGEDCO EB, GCC Property Tax, CMWSSB Water Tax, RTO PUC, or Insurance deadlines.">
+  <title>TN SevaGuard &bull; Tamil Nadu Bill, Tax & Renewal Reminder (தமிழ்நாடு நினைவூட்டல்)</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=Noto+Sans+Tamil:wght@400;600;700&display=swap"
+    rel="stylesheet">
+
+  <!-- FontAwesome Icons & Chart.js & Canvas Confetti -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <!-- Ambient background glow effects -->
+  <div class="glow-orb glow-orb-1"></div>
+  <div class="glow-orb glow-orb-2"></div>
+  <div class="glow-orb glow-orb-3"></div>
+
+  <!-- Notification Banner for Critical Expiring / Due Items -->
+  <aside id="alertBanner" class="alert-banner hidden" aria-live="polite">
+    <div class="alert-banner-content">
+      <div class="pulse-indicator"></div>
+      <i class="fa-solid fa-triangle-exclamation alert-icon"></i>
+      <div class="alert-text">
+        <strong id="alertBannerTitle">Urgent Due Date Alert!</strong>
+        <span id="alertBannerDesc">You have bills or renewals due in less than 7 days.</span>
+      </div>
+    </div>
+    <div class="alert-banner-actions">
+      <button id="btnViewUrgent" class="btn btn-sm btn-light">View Urgent Dues</button>
+      <button id="btnCloseAlertBanner" class="btn-close-banner" aria-label="Close notification banner">&times;</button>
+    </div>
+  </aside>
+
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="container header-container">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-landmark-dome"></i>
+        </div>
+        <div class="brand-info">
+          <h1>TN <span class="gradient-text">SevaGuard</span></h1>
+          <p class="brand-subtitle">Tamil Nadu Bill, Tax & Renewal Due Tracker <span class="tamil-text">(தமிழ்நாடு
+              நினைவூட்டல்)</span></p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Quick Action Buttons -->
+        <button id="btnOpenAddModal" class="btn btn-primary">
+          <i class="fa-solid fa-plus"></i>
+          <span>Add Reminder</span>
+        </button>
+
+        <button id="btnSyncGoogleSheets" class="btn btn-outline hidden" title="Sync live dues with Google Sheet">
+          <i class="fa-solid fa-arrows-rotate" id="syncSheetsIcon"></i>
+          <span>Sync Sheet</span>
+        </button>
+
+        <div class="header-btn-group">
+          <!-- Google Sheets Live Sync -->
+          <button id="btnGoogleSheets" class="btn-icon" title="Google Sheets Live Database"
+            aria-label="Google Sheets Connection">
+            <i class="fa-solid fa-table"></i>
+            <span id="sheetSyncDot" class="status-dot-indicator dot-disconnected"
+              title="Google Sheet: Disconnected"></span>
+          </button>
+
+          <!-- Notification Bell -->
+          <button id="btnNotifications" class="btn-icon" title="Due Alerts & Reminders" aria-label="View notifications">
+            <i class="fa-regular fa-bell"></i>
+            <span id="notifBadge" class="badge-count hidden">0</span>
+          </button>
+
+          <!-- Calendar ICS Export -->
+          <button id="btnExportAllICS" class="btn-icon" title="Sync All Due Dates to Calendar (.ics)"
+            aria-label="Sync all dues to calendar">
+            <i class="fa-regular fa-calendar-plus"></i>
+          </button>
+
+          <!-- Backup / Data Center -->
+          <button id="btnDataCenter" class="btn-icon" title="Import / Export Data" aria-label="Data backup and restore">
+            <i class="fa-solid fa-database"></i>
+          </button>
+
+          <!-- Theme Toggle -->
+          <button id="btnThemeToggle" class="btn-icon" title="Toggle Theme" aria-label="Toggle theme">
+            <i class="fa-solid fa-moon"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Notification Dropdown Flyout -->
+  <div id="notifFlyout" class="notif-flyout hidden">
+    <div class="notif-header">
+      <h3><i class="fa-solid fa-bell-ring"></i> TN Due Date Alert Center</h3>
+      <div class="notif-actions">
+        <button id="btnReqWebNotif" class="btn btn-xs btn-outline">Enable Web Alerts</button>
+        <button id="btnCloseNotifFlyout" class="btn-close">&times;</button>
+      </div>
+    </div>
+    <div id="notifList" class="notif-list">
+      <!-- Populated via JS -->
+    </div>
+    <div class="notif-footer">
+      <small id="notifSummaryText">Live scan based on current date & reminder threshold.</small>
+    </div>
+  </div>
+
+  <!-- Main Workspace -->
+  <main class="main-content">
+    <div class="container">
+
+      <!-- Quick Tamil Nadu Service Preset Templates Carousel -->
+      <section class="quick-presets-section mb-4">
+        <div class="presets-header">
+          <div class="presets-title">
+            <i class="fa-solid fa-bolt-lightning text-amber"></i>
+            <span><strong>Tamil Nadu Quick Presets</strong> &bull; Click any service to quickly add its reminder with
+              official portal link</span>
+          </div>
+        </div>
+        <div class="presets-scroll-grid">
+          <button class="preset-chip" onclick="applyQuickTemplate('tangedco')">
+            <i class="fa-solid fa-bolt text-amber"></i>
+            <div>
+              <strong>TANGEDCO EB Bill</strong>
+              <small>EB No &bull; tnebltd.gov.in</small>
+            </div>
+          </button>
+          <button class="preset-chip" onclick="applyQuickTemplate('gcc_property_tax')">
+            <i class="fa-solid fa-building text-cyan"></i>
+            <div>
+              <strong>Property Tax</strong>
+              <small>Assessment No &bull; GCC / Municipality</small>
+            </div>
+          </button>
+          <button class="preset-chip" onclick="applyQuickTemplate('cmwssb_water')">
+            <i class="fa-solid fa-droplet text-blue"></i>
+            <div>
+              <strong>Water Tax</strong>
+              <small>Consumer No &bull; MetroWater / Urban</small>
+            </div>
+          </button>
+          <button class="preset-chip" onclick="applyQuickTemplate('employment_exchange')">
+            <i class="fa-solid fa-user-graduate text-purple"></i>
+            <div>
+              <strong>Employment Exchange</strong>
+              <small>Reg No &bull; tnvelaivaaippu.gov.in</small>
+            </div>
+          </button>
+          <button class="preset-chip" onclick="applyQuickTemplate('vehicles_rto')">
+            <i class="fa-solid fa-car text-emerald"></i>
+            <div>
+              <strong>Vehicles (RC / FC / PUC)</strong>
+              <small>Vehicle No &bull; Parivahan RTO</small>
+            </div>
+          </button>
+          <button class="preset-chip" onclick="applyQuickTemplate('dl_renew')">
+            <i class="fa-solid fa-id-card text-amber"></i>
+            <div>
+              <strong>DL Renew</strong>
+              <small>DL No &bull; Sarathi Parivahan</small>
+            </div>
+          </button>
+          <button class="preset-chip" onclick="applyQuickTemplate('passport_renew')">
+            <i class="fa-solid fa-passport text-blue"></i>
+            <div>
+              <strong>Passport Renew</strong>
+              <small>File / Ref No &bull; PSK TN</small>
+            </div>
+          </button>
+          <button class="preset-chip" onclick="applyQuickTemplate('landline_broadband')">
+            <i class="fa-solid fa-phone-flip text-emerald"></i>
+            <div>
+              <strong>Landline & Broadband</strong>
+              <small>Phone No with STD &bull; BSNL / ACT</small>
+            </div>
+          </button>
+          <button class="preset-chip" onclick="applyQuickTemplate('vehicle_insurance')">
+            <i class="fa-solid fa-shield-heart text-red"></i>
+            <div>
+              <strong>Insurance Policy</strong>
+              <small>Annual Renewal &bull; Health / Auto</small>
+            </div>
+          </button>
+          <button class="preset-chip" onclick="applyQuickTemplate('lpg_cylinder')">
+            <i class="fa-solid fa-gas-pump text-cyan"></i>
+            <div>
+              <strong>LPG Gas Refill</strong>
+              <small>Consumer ID &bull; Indane / HP</small>
+            </div>
+          </button>
+        </div>
+      </section>
+
+      <!-- Executive Overview / KPI Stats Grid -->
+      <section class="kpi-grid">
+        <div class="kpi-card" data-filter="all">
+          <div class="kpi-icon icon-blue">
+            <i class="fa-solid fa-list-check"></i>
+          </div>
+          <div class="kpi-info">
+            <span class="kpi-label">Total Dues & Renewals</span>
+            <h2 class="kpi-value" id="kpiTotal">0</h2>
+            <span class="kpi-sub" id="kpiTotalCoverage">Active Reminders</span>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-card-critical" data-filter="expiring-urgent">
+          <div class="kpi-icon icon-red">
+            <i class="fa-solid fa-fire"></i>
+          </div>
+          <div class="kpi-info">
+            <span class="kpi-label">Due in ≤ 7 Days</span>
+            <h2 class="kpi-value text-red" id="kpiExpiringUrgent">0</h2>
+            <span class="kpi-sub badge-urgent-text">Immediate Action / Disconnection Risk</span>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-card-warning" data-filter="expiring-soon">
+          <div class="kpi-icon icon-amber">
+            <i class="fa-solid fa-hourglass-half"></i>
+          </div>
+          <div class="kpi-info">
+            <span class="kpi-label">Due in ≤ 30 Days</span>
+            <h2 class="kpi-value text-amber" id="kpiExpiringSoon">0</h2>
+            <span class="kpi-sub">Upcoming Due Dates</span>
+          </div>
+        </div>
+
+        <div class="kpi-card" data-filter="expired">
+          <div class="kpi-icon icon-purple">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div class="kpi-info">
+            <span class="kpi-label">Overdue / Expired</span>
+            <h2 class="kpi-value text-purple" id="kpiExpired">0</h2>
+            <span class="kpi-sub" id="kpiExpiredSub">Late fee / Penalty Applicable</span>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-card-premium">
+          <div class="kpi-icon icon-emerald">
+            <i class="fa-solid fa-indian-rupee-sign"></i>
+          </div>
+          <div class="kpi-info">
+            <span class="kpi-label">Upcoming Month Outflow</span>
+            <h2 class="kpi-value text-emerald" id="kpiAnnualPremium">₹0</h2>
+            <span class="kpi-sub" id="kpiActiveCount">0 Active Dues</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Analytics Collapsible Drawer / Dashboard -->
+      <section class="analytics-section card-surface mb-4">
+        <div class="section-header" id="analyticsHeader">
+          <div class="section-title-wrap">
+            <i class="fa-solid fa-chart-pie section-icon"></i>
+            <div>
+              <h3>Tamil Nadu Dues & Category Analytics</h3>
+              <p class="section-desc">TANGEDCO EB, Municipal Taxes, Vehicle RTO, Insurance, and Utility spending
+                timeline</p>
+            </div>
+          </div>
+          <button id="btnToggleAnalytics" class="btn btn-sm btn-ghost" aria-label="Toggle analytics charts">
+            <i class="fa-solid fa-chevron-down" id="analyticsChevron"></i>
+          </button>
+        </div>
+
+        <div id="analyticsBody" class="analytics-body">
+          <div class="charts-grid">
+            <div class="chart-box">
+              <h4>Dues Breakdown by Category</h4>
+              <div class="chart-canvas-container">
+                <canvas id="categoryChart"></canvas>
+              </div>
+            </div>
+            <div class="chart-box">
+              <h4>Upcoming 6-Month Payment Timeline (₹)</h4>
+              <div class="chart-canvas-container">
+                <canvas id="timelineChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Controls & Filter Toolbar -->
+      <section class="toolbar-section card-surface mb-4">
+        <div class="toolbar-row">
+          <!-- Search Bar -->
+          <div class="search-wrap">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="searchInput"
+              placeholder="Search by name, Consumer #, TNEB Region, Property ID, Provider, Vehicle #..."
+              autocomplete="off">
+            <button id="btnClearSearch" class="btn-clear-search hidden" title="Clear search">&times;</button>
+          </div>
+
+          <!-- Quick Filters Group -->
+          <div class="filter-controls">
+            <div class="select-wrapper">
+              <label for="filterStatus" class="sr-only">Status</label>
+              <select id="filterStatus" class="custom-select">
+                <option value="all">All Statuses</option>
+                <option value="expiring-urgent">🔥 Due in ≤ 7 Days</option>
+                <option value="expiring-soon">⚠️ Due in ≤ 30 Days</option>
+                <option value="active">✅ Active & Safe</option>
+                <option value="expired">⛔ Overdue / Expired</option>
+              </select>
+            </div>
+
+            <div class="select-wrapper">
+              <label for="filterCategory" class="sr-only">Category</label>
+              <select id="filterCategory" class="custom-select">
+                <option value="all">All Categories</option>
+                <option value="Electricity (TANGEDCO / EB)">⚡ Electricity (EB Bill)</option>
+                <option value="Property Tax (GCC / Municipality)">🏢 Property Tax</option>
+                <option value="Water & Sewerage (CMWSSB)">💧 Water Tax</option>
+                <option value="Employment Exchange Renewal">💼 Employment Exchange</option>
+                <option value="Vehicle & RTO (PUC / FC / DL)">🚗 Vehicles (RC / FC / PUC)</option>
+                <option value="Driving Licence (DL Renewal)">🪪 DL Renew (Driving Licence)</option>
+                <option value="Passport Renewal">🛂 Passport Renew</option>
+                <option value="Landline & Broadband">☎️ Landline & Broadband</option>
+                <option value="Insurance (Health / Auto / Life)">🛡️ Insurance Policy</option>
+                <option value="LPG & Piped Gas">⛽ LPG Gas Cylinder</option>
+                <option value="Professional & Trade Tax">📋 Professional & Trade Tax</option>
+                <option value="Govt Certificates & Schemes">📜 Govt Schemes & e-Sevai</option>
+                <option value="Other">📦 Other Dues</option>
+              </select>
+            </div>
+
+            <div class="select-wrapper">
+              <label for="sortBy" class="sr-only">Sort By</label>
+              <select id="sortBy" class="custom-select">
+                <option value="expiry-asc">Due Date: Soonest First</option>
+                <option value="expiry-desc">Due Date: Latest First</option>
+                <option value="premium-desc">Amount: High to Low</option>
+                <option value="premium-asc">Amount: Low to High</option>
+                <option value="name-asc">Service Name (A-Z)</option>
+              </select>
+            </div>
+
+            <!-- View Switcher -->
+            <div class="view-switcher" role="tablist">
+              <button class="view-btn active" data-view="grid" title="Card Grid View" aria-label="Grid view">
+                <i class="fa-solid fa-grid-2"></i>
+              </button>
+              <button class="view-btn" data-view="table" title="Table View" aria-label="Table view">
+                <i class="fa-solid fa-list"></i>
+              </button>
+              <button class="view-btn" data-view="calendar" title="Calendar / Timeline View" aria-label="Calendar view">
+                <i class="fa-solid fa-calendar-days"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter Badges / Active Pills Bar -->
+        <div class="filter-pills-bar">
+          <span class="active-count-badge" id="resultsCount">Showing 0 dues</span>
+          <div class="quick-pill-filters" id="quickPills">
+            <button class="pill-btn active" data-status="all">All</button>
+            <button class="pill-btn pill-urgent" data-status="expiring-urgent"><i class="fa-solid fa-fire"></i> Due in
+              &le; 7 Days</button>
+            <button class="pill-btn pill-warning" data-status="expiring-soon"><i class="fa-solid fa-clock"></i> Due in
+              &le; 30 Days</button>
+            <button class="pill-btn pill-active" data-status="active"><i class="fa-solid fa-circle-check"></i>
+              Safe</button>
+            <button class="pill-btn pill-expired" data-status="expired"><i class="fa-solid fa-circle-xmark"></i>
+              Overdue</button>
+          </div>
+          <button id="btnClearScreenData" class="btn btn-xs btn-ghost text-red ml-auto" title="Clear all dues and start fresh">
+            <i class="fa-solid fa-trash-can"></i> Clear All Records
+          </button>
+        </div>
+      </section>
+
+      <!-- Dynamic Views Container -->
+      <section id="viewsContainer" class="views-wrapper">
+        <!-- 1. Card Grid View -->
+        <div id="gridView" class="policy-grid view-panel active">
+          <!-- Populated by JavaScript -->
+        </div>
+
+        <!-- 2. Table View -->
+        <div id="tableView" class="table-container card-surface view-panel">
+          <table class="policy-table">
+            <thead>
+              <tr>
+                <th>Status & Due Date</th>
+                <th>Consumer Name</th>
+                <th>Father / Spouse Name</th>
+                <th>Mobile No</th>
+                <th>Category</th>
+                <th>Service / Account No</th>
+                <th>Due Amount / Cycle</th>
+                <th>Days Remaining</th>
+                <th class="text-right">Actions & Pay</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <!-- Populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 3. Calendar / Timeline View -->
+        <div id="calendarView" class="calendar-timeline-view card-surface view-panel">
+          <div class="timeline-header">
+            <h3><i class="fa-regular fa-calendar-days"></i> Tamil Nadu Due Dates Timeline</h3>
+            <p>Chronological schedule of all upcoming bill payments, municipal taxes, and certificate renewals</p>
+          </div>
+          <div id="timelineList" class="timeline-items">
+            <!-- Populated by JavaScript -->
+          </div>
+        </div>
+
+        <!-- Empty State View -->
+        <div id="emptyState" class="empty-state card-surface hidden">
+          <div class="empty-icon-wrap">
+            <i class="fa-solid fa-landmark-flag"></i>
+          </div>
+          <h3 id="emptyTitle">No Dues or Bills Found</h3>
+          <p id="emptySubtitle">Add your TANGEDCO EB, Property Tax, Vehicle PUC, Water Tax or Insurance reminder to get
+            started.</p>
+          <div class="empty-actions">
+            <button id="btnEmptyAdd" class="btn btn-primary">
+              <i class="fa-solid fa-plus"></i> Add Reminder
+            </button>
+            <button id="btnEmptySample" class="btn btn-outline">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Load Tamil Nadu Sample Dues
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Dynamic Pagination Controls -->
+      <section id="paginationSection" class="pagination-section card-surface mb-4">
+        <div class="pagination-row">
+          <div class="pagination-info">
+            <span id="pageInfoText">Showing 1–50 of 0 dues</span>
+          </div>
+
+          <div class="pagination-controls">
+            <div class="page-size-selector">
+              <label for="selectPageSize" class="text-xs text-muted">Per page:</label>
+              <select id="selectPageSize" class="custom-select select-xs">
+                <option value="25">25</option>
+                <option value="50" selected>50</option>
+                <option value="100">100</option>
+                <option value="200">200</option>
+              </select>
+            </div>
+
+            <div class="pagination-buttons">
+              <button id="btnFirstPage" class="btn btn-xs btn-outline" title="First Page">
+                <i class="fa-solid fa-angles-left"></i>
+              </button>
+              <button id="btnPrevPage" class="btn btn-xs btn-outline" title="Previous Page">
+                <i class="fa-solid fa-angle-left"></i> Prev
+              </button>
+
+              <!-- Google-style Numbered Page Buttons (1 2 3 4 5 6 7 8 9 10) -->
+              <div id="paginationNumberList" class="pagination-numbers-wrap"></div>
+
+              <button id="btnNextPage" class="btn btn-xs btn-outline" title="Next Page">
+                Next <i class="fa-solid fa-angle-right"></i>
+              </button>
+              <button id="btnLastPage" class="btn btn-xs btn-outline" title="Last Page">
+                <i class="fa-solid fa-angles-right"></i>
+              </button>
+
+              <!-- Quick Jump Input -->
+              <div class="page-jump-box">
+                <label for="inputJumpPage" class="text-xs text-muted">Go to:</label>
+                <input type="number" id="inputJumpPage" min="1" placeholder="Page" class="custom-input input-xs" style="width: 62px; text-align: center; height: 32px; padding: 2px 4px;">
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- Optimized Add / Edit Due Date Modal (Streamlined & Clean) -->
+  <div id="policyModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-badge-icon">
+            <i class="fa-solid fa-file-invoice"></i>
+          </div>
+          <div>
+            <h3 id="modalTitle">Add Tamil Nadu Bill / Renewal Reminder</h3>
+            <p class="modal-subtitle">Configure due date tracking for TANGEDCO, Corporation Taxes, RTO & Insurance</p>
+          </div>
+        </div>
+        <button id="btnCloseModal" class="btn-close" aria-label="Close modal">&times;</button>
+      </div>
+
+      <form id="policyForm" novalidate>
+        <input type="hidden" id="policyId" value="">
+
+        <div class="modal-body">
+          <div class="form-grid">
+
+            <!-- Section 1: Customer Profile (Common for all categories) -->
+            <div class="form-section-banner col-span-2">
+              <i class="fa-solid fa-address-card text-primary"></i>
+              <span>Customer Information &bull; <small>Common details for all Tamil Nadu service
+                  categories</small></span>
+            </div>
+
+            <!-- Consumer / Holder Name -->
+            <div class="form-group">
+              <label for="holderName" class="required">Consumer / Customer Name</label>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-user"></i>
+                <input type="text" id="holderName" maxlength="50" required autocomplete="off">
+              </div>
+            </div>
+
+            <!-- Father Name / Spouse Name -->
+            <div class="form-group">
+              <label for="fatherSpouseName" class="required">Father Name / Spouse Name</label>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-people-roof"></i>
+                <input type="text" id="fatherSpouseName" maxlength="50" required autocomplete="off">
+              </div>
+            </div>
+
+            <!-- Mobile Number -->
+            <div class="form-group col-span-2">
+              <label for="mobile" class="required">Mobile Number (WhatsApp & SMS Reminders)</label>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-mobile-screen-button"></i>
+                <input type="tel" id="mobile" required pattern="[0-9]{10}" maxlength="10" autocomplete="off">
+              </div>
+              <small class="field-hint" id="hintMobile">Maximum 10 digits (Numbers only)</small>
+            </div>
+
+            <!-- Section 2: Service Category & Respective Column -->
+            <div class="form-section-banner col-span-2 mt-2">
+              <i class="fa-solid fa-layer-group text-cyan"></i>
+              <span>Service Category & Specific Number &bull; <small>Respective field updates
+                  automatically</small></span>
+            </div>
+
+            <!-- Category -->
+            <div class="form-group col-span-2">
+              <label for="category" class="required">Service Category</label>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-shapes"></i>
+                <select id="category" required>
+                  <option value="Electricity (TANGEDCO / EB)">⚡ Electricity (EB Bill)</option>
+                  <option value="Property Tax (GCC / Municipality)">🏢 Property Tax (GCC / TN Municipal Corporation)
+                  </option>
+                  <option value="Water & Sewerage (CMWSSB)">💧 Water Tax (CMWSSB MetroWater / Urban)</option>
+                  <option value="Employment Exchange Renewal">💼 Employment Exchange Renewal (TN Dept of Employment)
+                  </option>
+                  <option value="Vehicle & RTO (PUC / FC / DL)">🚗 Vehicles (RC / FC / Insurance / PUC)</option>
+                  <option value="Driving Licence (DL Renewal)">🪪 DL Renew (Driving Licence)</option>
+                  <option value="Passport Renewal">🛂 Passport Renew (Passport Seva Kendra)</option>
+                  <option value="Landline & Broadband">☎️ Landline & Broadband (BSNL / ACT / Airtel)</option>
+                  <option value="Insurance (Health / Auto / Life)">🛡️ Insurance (Health / Auto / Term Life)</option>
+                  <option value="LPG & Piped Gas">⛽ LPG Gas Cylinder (Indane / HP / Bharat)</option>
+                  <option value="Professional & Trade Tax">📋 Professional Tax & Trade License</option>
+                  <option value="Govt Certificates & Schemes">📜 Govt Schemes (Ration Card / Pensioner / e-Sevai)
+                  </option>
+                  <option value="Other">📦 Other Bill / Renewal</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Dynamic Respective Field: EB No / Vehicle No / Assessment No / etc. -->
+            <div class="form-group highlight-field-group">
+              <label for="policyNumber" class="required font-semibold" id="labelPolicyNumber">
+                <span id="labelServiceSpecificName">EB No (மின் நுகர்வோர் எண்)</span>
+              </label>
+              <div class="input-icon-wrap highlight-input">
+                <i class="fa-solid fa-hashtag" id="iconPolicyNumber"></i>
+                <input type="text" id="policyNumber" maxlength="11" required autocomplete="off">
+              </div>
+              <small class="field-hint" id="hintPolicyNumber">Maximum 11 digits (Numbers only)</small>
+            </div>
+
+            <!-- Service Name / Title -->
+            <div class="form-group">
+              <label for="policyName" class="required">Service / Bill Title</label>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-tag"></i>
+                <input type="text" id="policyName" required>
+              </div>
+            </div>
+
+            <!-- Department / Provider -->
+            <div class="form-group">
+              <label for="provider" class="required">Department / Provider</label>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-building-columns"></i>
+                <input type="text" id="provider" required>
+              </div>
+            </div>
+
+            <!-- TN Region / District / Zone -->
+            <div class="form-group">
+              <label for="regionZone">TN Region / District (Optional)</label>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-map-location-dot"></i>
+                <select id="regionZone">
+                  <option value="">Select Region / District</option>
+                  <option value="Tiruppur">Tiruppur</option>
+                  <option value="01 - Chennai North">01 - Chennai North</option>
+                  <option value="02 - Chennai South">02 - Chennai South</option>
+                  <option value="03 - Coimbatore">03 - Coimbatore</option>
+                  <option value="04 - Erode">04 - Erode</option>
+                  <option value="05 - Madurai">05 - Madurai</option>
+                  <option value="06 - Trichy">06 - Trichy</option>
+                  <option value="07 - Tirunelveli">07 - Tirunelveli</option>
+                  <option value="08 - Vellore">08 - Vellore</option>
+                  <option value="09 - Villupuram">09 - Villupuram</option>
+                  <option value="Salem">Salem</option>
+                  <option value="Thanjavur">Thanjavur</option>
+                  <option value="Other TN District">Other TN District</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Section 3: Due Date & Payment Details -->
+            <div class="form-section-banner col-span-2 mt-2">
+              <i class="fa-solid fa-calendar-days text-emerald"></i>
+              <span>Due Date & Payment Schedule &bull; <small>Alert thresholds and cycles</small></span>
+            </div>
+
+            <!-- Bill Amount (₹) -->
+            <div class="form-group">
+              <label for="premiumAmount" class="required">Due Amount (₹)</label>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-indian-rupee-sign"></i>
+                <input type="number" id="premiumAmount" required min="0" step="any">
+              </div>
+            </div>
+
+            <!-- Due Date (Crucial) -->
+            <div class="form-group">
+              <label for="expiryDate" class="required font-semibold text-primary">Payment Due Date / Expiry</label>
+              <div class="input-icon-wrap highlight-input">
+                <i class="fa-solid fa-calendar-circle-exclamation text-primary"></i>
+                <input type="date" id="expiryDate" required>
+              </div>
+              <small class="field-hint" id="expiryDaysHint">Calculates days remaining automatically</small>
+            </div>
+
+            <!-- Bill / Payment Cycle -->
+            <div class="form-group">
+              <label for="paymentFrequency">Billing / Renewal Cycle</label>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-arrows-rotate"></i>
+                <select id="paymentFrequency">
+                  <option value="Bi-Monthly (2 Months - EB Bill)">Bi-Monthly (Every 2 Months - EB Bill)</option>
+                  <option value="Half-Yearly (Property/Water/PT)">Half-Yearly (Property / Water / PT)</option>
+                  <option value="6-Months (PUC Test)">6 Months (PUC Smoke Test)</option>
+                  <option value="Annual (Yearly)">Annual (Yearly)</option>
+                  <option value="Monthly">Monthly</option>
+                  <option value="One-Time / As Needed">One-Time / As Needed</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Official Payment Portal URL -->
+            <div class="form-group">
+              <label for="portalUrl">Official Pay Portal Link (Optional)</label>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                <input type="url" id="portalUrl">
+              </div>
+            </div>
+
+            <!-- Reminder Threshold Days -->
+            <div class="form-group">
+              <label for="reminderDays">Alert Me In Advance</label>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-bell"></i>
+                <select id="reminderDays">
+                  <option value="7">7 Days before due date</option>
+                  <option value="3">3 Days before due date</option>
+                  <option value="15">15 Days before due date</option>
+                  <option value="30">30 Days before due date</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="form-group col-span-2">
+              <label for="notes">Notes / Consumer Specifics (Optional)</label>
+              <div class="input-icon-wrap">
+                <i class="fa-regular fa-comment-dots"></i>
+                <input type="text" id="notes">
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="btnCancelModal" class="btn btn-ghost">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitPolicy">
+            <i class="fa-solid fa-check"></i>
+            <span>Save Reminder</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Quick Renewal / "Mark as Paid & Advance Cycle" Modal -->
+  <div id="renewModal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-badge-icon icon-green">
+            <i class="fa-solid fa-rotate"></i>
+          </div>
+          <div>
+            <h3>Mark as Paid & Advance Cycle</h3>
+            <p class="modal-subtitle" id="renewPolicySubtitle">Record payment and set next billing due date</p>
+          </div>
+        </div>
+        <button id="btnCloseRenewModal" class="btn-close">&times;</button>
+      </div>
+      <form id="renewForm">
+        <input type="hidden" id="renewPolicyId" value="">
+        <div class="modal-body">
+          <div class="renew-preview-card">
+            <h4 id="renewPolicyName">Service Name</h4>
+            <p id="renewPolicyDetails">Department &bull; Consumer / Policy #</p>
+            <div class="renew-dates-grid">
+              <div>
+                <span class="text-muted">Current Due Date:</span>
+                <strong id="renewCurrentExpiry" class="d-block text-red">--</strong>
+              </div>
+              <div>
+                <span class="text-muted">Next Due Date:</span>
+                <strong id="renewNewExpiryPreview" class="d-block text-emerald">--</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group mt-3">
+            <label for="renewExtension">Advance Next Due Date by</label>
+            <select id="renewExtension" class="custom-select">
+              <option value="2-months" selected>+2 Months (TANGEDCO EB Bill Cycle)</option>
+              <option value="6-months">+6 Months (Half-Yearly Property/Water/PUC)</option>
+              <option value="1-year">+1 Year (Annual Insurance / Trade License)</option>
+              <option value="1-month">+1 Month (Broadband / LPG / Postpaid)</option>
+              <option value="custom">Custom Date</option>
+            </select>
+          </div>
+
+          <div class="form-group mt-2 hidden" id="customRenewDateGroup">
+            <label for="renewCustomDate">Specify Custom Next Due Date</label>
+            <input type="date" id="renewCustomDate" class="custom-select">
+          </div>
+
+          <div class="form-group mt-3">
+            <label for="renewNewPremium">Updated Next Estimated Amount (₹) (Optional)</label>
+            <input type="number" id="renewNewPremium" step="any">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="btnCancelRenew" class="btn btn-ghost">Cancel</button>
+          <button type="submit" class="btn btn-emerald">
+            <i class="fa-solid fa-sparkles"></i> Confirm Payment & Advance
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Share & Reminder Outreach Modal (WhatsApp, Email, Calendar, Direct Pay Link) -->
+  <div id="shareModal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-badge-icon icon-blue">
+            <i class="fa-solid fa-paper-plane"></i>
+          </div>
+          <div>
+            <h3>Dispatch Due Reminder / Pay Online</h3>
+            <p class="modal-subtitle" id="shareSubtitle">Send WhatsApp/Email alert with direct payment link</p>
+          </div>
+        </div>
+        <button id="btnCloseShareModal" class="btn-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="recipient-info-chip mb-2" id="shareRecipientChip">
+          <i class="fa-solid fa-user-check text-emerald"></i>
+          <span>Recipient: <strong id="shareCustomerName">Abdulrahim</strong> &bull; S/o or Spouse: <span
+              id="shareFatherSpouse">Fathimabeevi</span> &bull; Mobile: <strong id="shareMobileNumber"
+              class="text-emerald">+91 7904623327</strong></span>
+        </div>
+
+        <div class="reminder-text-box mb-3">
+          <label class="font-semibold mb-1 d-block">Generated Reminder Message:</label>
+          <textarea id="shareMessagePreview" rows="6" readonly class="reminder-preview-area"></textarea>
+        </div>
+
+        <div class="share-actions-grid">
+          <a id="btnDirectPayPortal" target="_blank" rel="noopener" class="btn btn-primary">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Official Pay Portal
+          </a>
+          <a id="btnWhatsAppShare" target="_blank" rel="noopener" class="btn btn-whatsapp">
+            <i class="fa-brands fa-whatsapp"></i> Send via WhatsApp
+          </a>
+          <a id="btnEmailShare" class="btn btn-email">
+            <i class="fa-solid fa-envelope"></i> Send via Email
+          </a>
+          <button id="btnDownloadSingleICS" class="btn btn-cal">
+            <i class="fa-regular fa-calendar-plus"></i> Add to Calendar (.ics)
+          </button>
+          <button id="btnCopyReminderText" class="btn btn-outline col-span-2">
+            <i class="fa-regular fa-copy"></i> Copy Message Text
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Management / Import & Export Modal -->
+  <div id="dataModal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-badge-icon">
+            <i class="fa-solid fa-database"></i>
+          </div>
+          <div>
+            <h3>Tamil Nadu Data Backup & Restore</h3>
+            <p class="modal-subtitle">Export or import your complete bills and renewals database</p>
+          </div>
+        </div>
+        <button id="btnCloseDataModal" class="btn-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="data-action-card mb-3">
+          <div class="data-card-info">
+            <h4><i class="fa-solid fa-file-export text-primary"></i> Export Dues Data</h4>
+            <p>Download a complete backup in CSV (Spreadsheet) or JSON format.</p>
+          </div>
+          <div class="data-card-buttons">
+            <button id="btnExportJSON" class="btn btn-sm btn-outline">
+              <i class="fa-solid fa-code"></i> Export JSON
+            </button>
+            <button id="btnExportCSV" class="btn btn-sm btn-outline">
+              <i class="fa-solid fa-file-csv"></i> Export CSV
+            </button>
+          </div>
+        </div>
+
+        <div class="data-action-card mb-3">
+          <div class="data-card-info">
+            <h4><i class="fa-solid fa-file-import text-primary"></i> Import Dues</h4>
+            <p>Restore your dues from a previously saved JSON or CSV file.</p>
+          </div>
+          <div class="data-card-buttons">
+            <label class="btn btn-sm btn-primary cursor-pointer">
+              <i class="fa-solid fa-upload"></i> Choose File
+              <input type="file" id="importFileInput" accept=".json,.csv" class="hidden">
+            </label>
+          </div>
+        </div>
+
+        <div class="data-action-card danger-zone">
+          <div class="data-card-info">
+            <h4><i class="fa-solid fa-triangle-exclamation text-red"></i> Clear Database</h4>
+            <p>Erase all stored bills and reminders from local browser storage.</p>
+          </div>
+          <div class="data-card-buttons">
+            <button id="btnClearAllData" class="btn btn-sm btn-danger">
+              <i class="fa-solid fa-trash"></i> Reset All
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Google Sheets Integration Modal -->
+  <div id="googleSheetsModal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-badge-icon" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald);">
+            <i class="fa-solid fa-table"></i>
+          </div>
+          <div>
+            <h3>Google Sheets Live Database</h3>
+            <p class="modal-subtitle">Two-way sync: Fetch due dates for screen alerts & auto-save new reminders</p>
+          </div>
+        </div>
+        <button id="btnCloseSheetsModal" class="btn-close" aria-label="Close Google Sheets modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Live Status Card -->
+        <div class="sheet-status-card mb-3" id="sheetStatusCard">
+          <div class="sheet-status-icon">
+            <span class="status-pulse-dot" id="sheetModalPulse"></span>
+          </div>
+          <div class="sheet-status-details">
+            <strong id="sheetConnectionStatus">Not Connected (Using Local Storage)</strong>
+            <small id="sheetLastSyncedText">Connect your Google Sheet below to sync dues automatically.</small>
+          </div>
+          <button id="btnModalSyncNow" class="btn btn-xs btn-outline hidden">
+            <i class="fa-solid fa-arrows-rotate"></i> Sync Now
+          </button>
+        </div>
+
+        <!-- Connection Form -->
+        <div class="form-group mb-3">
+          <label for="inputGoogleSheetsUrl" class="font-semibold">
+            Google Apps Script Web App URL
+          </label>
+          <div class="input-icon-wrap">
+            <i class="fa-solid fa-link"></i>
+            <input type="url" id="inputGoogleSheetsUrl" placeholder="https://script.google.com/macros/s/AKfycb.../exec"
+              autocomplete="off">
+          </div>
+          <small class="field-hint">Paste the Web App URL generated from your Google Sheet's Apps Script.</small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="custom-checkbox-label">
+            <input type="checkbox" id="chkAutoSyncSheets" checked>
+            <span>Automatically fetch and sync due dates from Google Sheet on page load</span>
+          </label>
+        </div>
+
+        <div class="sheets-actions-row mb-3">
+          <button id="btnConnectGoogleSheet" class="btn btn-emerald flex-1">
+            <i class="fa-solid fa-plug-circle-check"></i> Test & Connect Sheet
+          </button>
+          <button id="btnDisconnectSheet" class="btn btn-ghost text-red hidden">
+            <i class="fa-solid fa-plug-circle-xmark"></i> Disconnect
+          </button>
+        </div>
+
+        <!-- Quick 1-Minute Setup Guide Collapsible -->
+        <div class="sheet-guide-box">
+          <div class="sheet-guide-header" id="btnToggleSheetGuide">
+            <span class="font-semibold text-primary">
+              <i class="fa-solid fa-circle-question"></i> Need help setting up Google Sheets? (1-Minute Guide)
+            </span>
+            <i class="fa-solid fa-chevron-down" id="sheetGuideChevron"></i>
+          </div>
+          <div class="sheet-guide-content hidden" id="sheetGuideContent">
+            <ol class="sheet-guide-steps">
+              <li>Open your Google Sheet and click <strong>Extensions &gt; Apps Script</strong>.</li>
+              <li>Click <strong>"Download Apps Script (.js)"</strong> or <strong>"Copy Script"</strong> below, and paste
+                it into the editor.</li>
+              <li>Click <strong>Deploy &gt; New deployment &gt; Web app</strong>.</li>
+              <li>Set <em>Execute as: Me</em> and <em>Who has access: Anyone</em>, then click <strong>Deploy</strong>.
+              </li>
+              <li>Copy the Web App URL and paste it into the input field above!</li>
+            </ol>
+            <div class="sheet-guide-actions mt-3">
+              <button id="btnDownloadAppsScript" class="btn btn-xs btn-primary">
+                <i class="fa-solid fa-file-arrow-down"></i> Download Apps Script (.js)
+              </button>
+              <button id="btnCopyAppsScript" class="btn btn-xs btn-outline">
+                <i class="fa-regular fa-copy"></i> Copy Script to Clipboard
+              </button>
+              <button id="btnDownloadSampleCSV" class="btn btn-xs btn-outline">
+                <i class="fa-solid fa-download"></i> Download Sample CSV
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+
+</html>
